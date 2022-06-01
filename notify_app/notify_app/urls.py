@@ -3,6 +3,7 @@ from notify import views
 
 urlpatterns = [
     path('notifications/', views.notification_list),
-    path('notification/<int:pk>/', views.notification_detail)
+    path('notifications/send/<int:pk>', views.notification_send),
+    path('notification/<int:pk>/', views.notification_detail),
 ]
 
