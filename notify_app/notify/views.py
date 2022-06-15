@@ -3,9 +3,11 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from notify.models import Notification
 from notify.serializer import NotificationSerializer
-
+from notify.tasks import send_notification
+from datetime import datetime
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+
 
 
 @csrf_exempt
@@ -25,6 +27,8 @@ def notification_list(request):
             return JsonResponse(serializer.data)
 
         return JsonResponse(serializer.errors, status=400)
+    
+    return HttpResponse(status=405)
 
 
 @csrf_exempt
@@ -42,21 +46,22 @@ def notification_detail(request, pk):
     elif request.method == 'PUT':
         data = JSONParser().parse(request)
         serializer = NotificationSerializer(notification, data=data)
-        
+
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data)
+
         return JsonResponse(serializer.errors, status=400)
 
     elif request.method == 'DELETE':
         notification.delete()
         return JsonResponse({'message': 'deleted'}, status=200)
 
+    return HttpResponse(status=405)
+
 
 @csrf_exempt
 def notification_send(request, pk):
-
-    channel_layer = get_channel_layer()
 
     try:
         notification = Notification.objects.get(pk=pk)
@@ -64,10 +69,22 @@ def notification_send(request, pk):
         return HttpResponse(status=404)
 
     if request.method == 'POST':
-        serializer = NotificationSerializer(notification)
-        async_to_sync(channel_layer.group_send)('notification', {
-            'type': 'notify',
-            'content': serializer.data,
-        })
-        return HttpResponse(status=200)
+
+        if request.body.decode('utf-8') == '': #is the request body is empty?
+            channel_layer = get_channel_layer()
+            serializer = NotificationSerializer(notification)
+            async_to_sync(channel_layer.group_send)('notification', {
+                'type': 'notify',
+                'content': serializer.data,
+            })
+            return HttpResponse(status=200)
+
+        else:
+            data = JSONParser().parse(request)
+            channel_layer = get_channel_layer()
+            schedule_time = datetime.strptime(data['sendAt'], "%d/%m/%Y %H:%M:%S")
+            serializer = NotificationSerializer(notification)
+            send_notification.apply_async(args=[serializer.data], eta=schedule_time)
+            return HttpResponse(status=202)
+
     return HttpResponse(status=405)
