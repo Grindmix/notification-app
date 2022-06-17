@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from notify.models import Notification
 from notify.serializer import NotificationSerializer
-from notify.tasks import send_notification
+from notify.tasks import send_notification, send_ping
 from datetime import datetime
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -88,3 +88,4 @@ def notification_send(request, pk):
             return HttpResponse(status=202)
 
     return HttpResponse(status=405)
+
