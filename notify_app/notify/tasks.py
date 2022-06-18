@@ -24,7 +24,7 @@ def send_ping():
             'content': data,
     })
 
-    t = threading.Timer(10, check_pong) # простите меня просто у меня не было других идей
+    t = threading.Timer(5, check_pong) # простите меня просто у меня не было других идей
     t.start()
 
 
