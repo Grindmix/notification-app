@@ -1,5 +1,6 @@
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 from rest_framework.parsers import JSONParser
 from notify.models import Notification
 from notify.serializer import NotificationSerializer
@@ -77,6 +78,8 @@ def notification_send(request, pk):
                 'type': 'notify',
                 'content': serializer.data,
             })
+            notification.last_sent_at = timezone.now()
+            notification.save()
             return HttpResponse(status=200)
 
         else:
@@ -84,7 +87,7 @@ def notification_send(request, pk):
             channel_layer = get_channel_layer()
             schedule_time = datetime.strptime(data['sendAt'], "%d/%m/%Y %H:%M:%S")
             serializer = NotificationSerializer(notification)
-            send_notification.apply_async(args=[serializer.data], eta=schedule_time)
+            send_notification.apply_async(args=[serializer.data, schedule_time], eta=schedule_time)
             return HttpResponse(status=202)
 
     return HttpResponse(status=405)
