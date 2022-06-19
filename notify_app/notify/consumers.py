@@ -8,12 +8,14 @@ class NotificationConsumer(JsonWebsocketConsumer):
     group_name = 'notification'
     latest_recieved_message = None
     latest_id = None
+    just_connected = False
     
     def connect(self):
         async_to_sync(self.channel_layer.group_add)(
             self.group_name,
             self.channel_name
         )
+        self.just_connected = True
         self.accept()
 
     def notify(self, event):
@@ -27,6 +29,10 @@ class NotificationConsumer(JsonWebsocketConsumer):
         self.send_json(event['content'])
 
     def check_pong(self, event):
+        if self.just_connected == True:
+            self.just_connected = False
+            return
+
         if self.latest_recieved_message == None:
              self.close()
         else:
