@@ -8,7 +8,9 @@ ENV PYTHONUNBUFFERED 1
 RUN apk update && apk add python3-dev \
                         gcc \
                         libc-dev \
-                        libffi-dev
+                        libffi-dev \
+                        musl-dev \
+                        postgresql-dev
 
 RUN pip install --upgrade pip
 COPY ./requirements.txt /usr/src/app/requirements.txt

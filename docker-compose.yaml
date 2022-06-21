@@ -3,7 +3,7 @@ version: '3.8'
 services:
   web:
     build: ./notify_app
-    command: python manage.py runserver 0.0.0.0:8000
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./notify_app/:/usr/src/app/
     ports:
@@ -14,9 +14,18 @@ services:
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
     depends_on:
       - redis
+      - db
 
   redis:
     image: redis:alpine
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=notify_app_database
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
 
   celery:
     build: ./notify_app
